@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Quiz Night · Админ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #e5471c;
+    --orange-dark: #b9300f;
+    --ink: #1a1410;
+    --cream: #f4e6c8;
+    --yellow: #f7c31d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Rubik, system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--orange);
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; display: grid; gap: 26px; }
+  h1 {
+    margin: 0;
+    font-family: "Rubik Mono One", Rubik, sans-serif;
+    font-size: 40px;
+    color: var(--yellow);
+    -webkit-text-stroke: 2px var(--ink);
+    paint-order: stroke fill;
+    text-shadow: 4px 4px 0 var(--ink);
+  }
+  .card { background: var(--cream); border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); padding: 22px; }
+  h2 { margin: 0 0 12px; font-weight: 900; font-size: 22px; }
+  .totals { display: flex; flex-wrap: wrap; gap: 10px; font-weight: 800; }
+  .totals span { padding: 4px 12px; background: var(--ink); color: var(--cream); }
+  .totals b { color: var(--yellow); }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 2px solid rgba(26, 20, 16, .2); }
+  th { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+  td.no { opacity: .6; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  select, input[type=number] {
+    font: 600 16px Rubik, system-ui, sans-serif;
+    padding: 10px 12px;
+    color: var(--ink);
+    background: #fff8e6;
+    border: 3px solid var(--ink);
+    border-radius: 0;
+  }
+  input[type=number] { width: 90px; }
+  .btn {
+    font: 900 16px Rubik, system-ui, sans-serif;
+    color: var(--ink);
+    padding: 11px 20px;
+    background: var(--yellow);
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    cursor: pointer;
+  }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn.plain { background: #fff8e6; }
+  .small { font: 600 13px Rubik, system-ui, sans-serif; padding: 3px 10px; background: none; border: 2px solid var(--ink); cursor: pointer; }
+  .teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-top: 18px; }
+  .team { border: 3px solid var(--ink); background: #fff8e6; padding: 12px; }
+  .team h3 { margin: 0 0 6px; font-size: 16px; font-weight: 900; color: var(--orange-dark); }
+  .team ul { margin: 0; padding-left: 18px; font-weight: 600; }
+  .msg { min-height: 1.4em; margin: 12px 0 0; font-weight: 800; color: var(--orange-dark); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>QUIZ NIGHT · АДМИН</h1>
+
+  <section class="card" id="denied" hidden>
+    <h2>Түлхүүр буруу байна</h2>
+    <p>Сервер асахдаа хэвлэсэн <code>/admin?key=...</code> холбоосоор орно уу.</p>
+  </section>
+
+  <section class="card" id="list-card" hidden>
+    <h2>Бүртгэл</h2>
+    <div class="totals">
+      <span>Ирнэ: <b id="yes-count">0</b></span>
+      <span>Ирэхгүй: <b id="no-count">0</b></span>
+    </div>
+    <table>
+      <thead><tr><th>Нэр</th><th>Хариу</th><th>Хэзээ</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="teams-card" hidden>
+    <h2>Баг хуваах</h2>
+    <div class="controls">
+      <select id="mode" aria-label="Хуваах арга">
+        <option value="teamSize">Нэг багт хэдэн хүн</option>
+        <option value="teamCount">Нийт хэдэн баг</option>
+      </select>
+      <input type="number" id="amount" min="1" value="4" aria-label="Тоо">
+      <button class="btn" id="generate">Баг хуваах 🎲</button>
+      <button class="btn plain" id="copy" hidden>Текстээр хуулах</button>
+      <button class="btn plain" id="clear" hidden>Багуудыг арилгах</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <div class="teams" id="teams"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const key = new URLSearchParams(location.search).get('key') || '';
+let db = { rsvps: [], teams: [] };
+
+async function call(method, path, body) {
+  const res = await fetch(`/api/admin/${path}?key=${encodeURIComponent(key)}`, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    $('#denied').hidden = false;
+    $('#list-card').hidden = true;
+    $('#teams-card').hidden = true;
+    throw new Error('unauthorized');
+  }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.status);
+  return data;
+}
+
+function cell(text, className) {
+  const td = document.createElement('td');
+  td.textContent = text;
+  if (className) td.className = className;
+  return td;
+}
+
+function render() {
+  $('#list-card').hidden = false;
+  $('#teams-card').hidden = false;
+  const coming = db.rsvps.filter((r) => r.coming);
+  $('#yes-count').textContent = coming.length;
+  $('#no-count').textContent = db.rsvps.length - coming.length;
+
+  const sorted = [...db.rsvps].sort((a, b) => b.coming - a.coming || a.at.localeCompare(b.at));
+  $('#rows').replaceChildren(...sorted.map((r) => {
+    const tr = document.createElement('tr');
+    const del = document.createElement('button');
+    del.className = 'small';
+    del.textContent = 'Устгах';
+    del.addEventListener('click', async () => {
+      if (!confirm(`"${r.name}"-г устгах уу?`)) return;
+      db = await call('DELETE', 'rsvp', { name: r.name });
+      render();
+    });
+    const actions = document.createElement('td');
+    actions.append(del);
+    tr.append(
+      cell(r.name, r.coming ? '' : 'no'),
+      cell(r.coming ? 'Ирнэ 👻' : 'Ирэхгүй', r.coming ? '' : 'no'),
+      cell(new Date(r.at).toLocaleString('mn-MN'), r.coming ? '' : 'no'),
+      actions,
+    );
+    return tr;
+  }));
+
+  $('#copy').hidden = $('#clear').hidden = !db.teams.length;
+  $('#teams').replaceChildren(...db.teams.map((team) => {
+    const box = document.createElement('div');
+    box.className = 'team';
+    const title = document.createElement('h3');
+    title.textContent = `${team.name} (${team.members.length})`;
+    const ul = document.createElement('ul');
+    for (const member of team.members) {
+      const li = document.createElement('li');
+      li.textContent = member;
+      ul.append(li);
+    }
+    box.append(title, ul);
+    return box;
+  }));
+}
+
+$('#generate').addEventListener('click', async () => {
+  if (db.teams.length && !confirm('Одоо байгаа багуудыг дахин холих уу?')) return;
+  try {
+    db = await call('POST', 'teams', { [$('#mode').value]: Number($('#amount').value) });
+    $('#msg').textContent = '';
+    render();
+  } catch (err) {
+    $('#msg').textContent = err.message === 'no attendees' ? 'Ирэх хүн алга байна.' : 'Тоогоо зөв оруулна уу.';
+  }
+});
+
+$('#clear').addEventListener('click', async () => {
+  if (!confirm('Багуудыг арилгах уу?')) return;
+  db = await call('DELETE', 'teams');
+  render();
+});
+
+$('#copy').addEventListener('click', async () => {
+  const text = db.teams.map((t) => `${t.name}:\n${t.members.map((m) => `  - ${m}`).join('\n')}`).join('\n\n');
+  await navigator.clipboard.writeText(text);
+  $('#msg').textContent = 'Хууллаа!';
+});
+
+async function load() {
+  try {
+    db = await call('GET', 'rsvps');
+    render();
+  } catch {}
+}
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>

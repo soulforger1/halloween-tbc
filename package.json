@@ -1,0 +1,7 @@
+{
+  "name": "halloween-rsvp",
+  "private": true,
+  "scripts": {
+    "start": "bun server.ts"
+  }
+}
