@@ -138,6 +138,14 @@ async function api(req: Request, url: URL): Promise<Response> {
       return json(db);
     }
 
+    if (route === "DELETE /api/admin/egg") {
+      const body = await readBody(req);
+      const name = String(body.name ?? "");
+      db.egg = db.egg.filter((e) => !sameName(e.name, name));
+      await save();
+      return json(db);
+    }
+
     if (route === "GET /api/admin/rsvps") return json(db);
 
     if (route === "DELETE /api/admin/rsvp") {

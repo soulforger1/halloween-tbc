@@ -203,8 +203,16 @@ function render() {
       db = await call('POST', 'egg', { name: e.name, disqualified: !e.disqualified });
       render();
     });
+    const del = document.createElement('button');
+    del.className = 'small';
+    del.textContent = 'Устгах';
+    del.addEventListener('click', async () => {
+      if (!confirm(`"${e.name}"-г жагсаалтаас устгах уу?`)) return;
+      db = await call('DELETE', 'egg', { name: e.name });
+      render();
+    });
     const actions = document.createElement('td');
-    actions.append(toggle);
+    actions.append(toggle, ' ', del);
     tr.append(cell(i + 1, cls), name, cell(new Date(e.at).toLocaleString('mn-MN'), cls), actions);
     return tr;
   }));
