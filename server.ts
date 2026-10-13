@@ -11,7 +11,9 @@ const MAX_RSVPS = 500;
 
 type Rsvp = { name: string; coming: boolean; at: string };
 type Team = { name: string; members: string[] };
-type Db = { rsvps: Rsvp[]; teams: Team[] };
+// Everyone who finished the hidden poster task, in order. The first one not disqualified wins.
+type EggSolver = { name: string; at: string; disqualified: boolean };
+type Db = { rsvps: Rsvp[]; teams: Team[]; egg: EggSolver[] };
 
 const TEAM_NAMES = [
   "Сүнснүүд",
@@ -31,8 +33,8 @@ const TEAM_NAMES = [
 await mkdir(DATA_DIR, { recursive: true });
 const dataFile = Bun.file(DATA_FILE);
 const db: Db = (await dataFile.exists())
-  ? { rsvps: [], teams: [], ...(await dataFile.json()) }
-  : { rsvps: [], teams: [] };
+  ? { rsvps: [], teams: [], egg: [], ...(await dataFile.json()) }
+  : { rsvps: [], teams: [], egg: [] };
 
 // Writes are chained so two requests never write the file at the same time.
 let pending: Promise<unknown> = Promise.resolve();
@@ -62,6 +64,7 @@ function makeTeams(names: string[], teamCount: number): Team[] {
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+const cleanName = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
 
 async function readBody(req: Request): Promise<Record<string, unknown>> {
   try {
@@ -90,7 +93,7 @@ async function api(req: Request, url: URL): Promise<Response> {
 
   if (route === "POST /api/rsvp") {
     const body = await readBody(req);
-    const name = String(body.name ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
+    const name = cleanName(body.name);
     if (!name) return json({ error: "name required" }, 400);
     if (typeof body.coming !== "boolean") return json({ error: "coming required" }, 400);
 
@@ -106,8 +109,34 @@ async function api(req: Request, url: URL): Promise<Response> {
     return json(publicState());
   }
 
+  if (route === "POST /api/egg") {
+    const body = await readBody(req);
+    const name = cleanName(body.name);
+    if (!name) return json({ error: "name required" }, 400);
+
+    if (!db.egg.some((e) => sameName(e.name, name))) {
+      if (db.egg.length >= MAX_RSVPS) return json({ error: "list is full" }, 400);
+      db.egg.push({ name, at: new Date().toISOString(), disqualified: false });
+      await save();
+    }
+    const valid = db.egg.filter((e) => !e.disqualified);
+    return json({
+      winner: valid[0]?.name ?? null,
+      place: valid.findIndex((e) => sameName(e.name, name)) + 1,
+    });
+  }
+
   if (url.pathname.startsWith("/api/admin/")) {
     if (url.searchParams.get("key") !== ADMIN_KEY) return json({ error: "unauthorized" }, 401);
+
+    if (route === "POST /api/admin/egg") {
+      const body = await readBody(req);
+      const solver = db.egg.find((e) => sameName(e.name, String(body.name ?? "")));
+      if (!solver) return json({ error: "not found" }, 404);
+      solver.disqualified = body.disqualified === true;
+      await save();
+      return json(db);
+    }
 
     if (route === "GET /api/admin/rsvps") return json(db);
 

@@ -78,6 +78,9 @@
                 border: 8px solid var(--cream);
                 box-shadow: 10px 10px 0 var(--ink);
                 transform: rotate(-2.5deg);
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-user-drag: none;
             }
             .side {
                 display: grid;
@@ -395,8 +398,34 @@
                 overflow: visible;
             }
 
+            /* easter egg: a held creature glows when it is over its own spot on the poster */
+            .toy.held.warm {
+                filter: drop-shadow(0 0 7px var(--yellow))
+                    drop-shadow(0 0 2px var(--yellow));
+            }
+            .toy.placed {
+                filter: none;
+            }
+            .egg-board {
+                max-width: 440px;
+                text-align: center;
+            }
+            .egg-board p {
+                margin: 0;
+                font-weight: 800;
+                font-size: 18px;
+                line-height: 1.45;
+            }
+            #egg-form {
+                display: grid;
+                justify-items: center;
+                gap: 16px;
+                margin-top: 18px;
+            }
+
             /* the prize board hangs from the ceiling on two ropes */
-            #prize-modal {
+            #prize-modal,
+            #egg-modal {
                 position: fixed;
                 inset: 0;
                 z-index: 45;
@@ -534,6 +563,39 @@
             .prize-extra .place {
                 font-size: 15px;
             }
+            /* phones: first place on its own row so the amounts fit */
+            @media (max-width: 560px) {
+                .prize-board {
+                    padding: 24px 14px 18px;
+                }
+                .podium {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .prize-1 {
+                    grid-column: 1 / -1;
+                    order: -1;
+                    padding-top: 14px;
+                    padding-bottom: 12px;
+                }
+                .prize .art {
+                    max-width: 76px;
+                }
+                .prize-1 .art {
+                    max-width: 120px;
+                }
+                .prize .amount {
+                    font-size: 20px;
+                }
+                .prize-1 .amount {
+                    font-size: 30px;
+                }
+                .prize-extra {
+                    grid-template-columns: 48px 1fr;
+                }
+                .prize-extra .art {
+                    width: 48px;
+                }
+            }
             .money {
                 position: fixed;
                 top: 0;
@@ -608,6 +670,9 @@
             }
             .toy-cat {
                 width: 70px;
+            }
+            .toy-beer {
+                width: 64px;
             }
             .toy-popcorn {
                 width: 60px;
@@ -746,6 +811,9 @@
                 .toy-bat {
                     width: 70px;
                 }
+                .toy-beer {
+                    width: 48px;
+                }
                 .toy-cat {
                     width: 52px;
                 }
@@ -811,10 +879,36 @@
             </div>
         </div>
 
+        <div id="egg-modal" hidden>
+            <div
+                class="prize-board egg-board"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="egg-title"
+            >
+                <button type="button" class="prize-close" aria-label="Хаах">
+                    ✕
+                </button>
+                <h2 id="egg-title">Нууц шагнал</h2>
+                <p id="egg-text" aria-live="polite"></p>
+                <form id="egg-form" autocomplete="off" hidden>
+                    <input
+                        type="text"
+                        id="egg-name"
+                        maxlength="40"
+                        placeholder="Нэрээ бичээрэй"
+                        aria-label="Нэр"
+                    />
+                    <button type="submit" class="btn btn-yes">Илгээх</button>
+                </form>
+            </div>
+        </div>
+
         <main>
             <img
                 class="poster"
                 src="poster.jpg"
+                draggable="false"
                 alt="Quiz Night постер, 10 сарын 29"
             />
 
@@ -822,7 +916,9 @@
                 <header>
                     <h1>QUIZ<br />NIGHT</h1>
                     <div>
-                        <span class="date">Halloween · 10 сарын 29 · 18:30</span>
+                        <span class="date"
+                            >Halloween · 10 сарын 29 · 18:30</span
+                        >
                     </div>
                 </header>
 
@@ -875,7 +971,12 @@
                     </div>
                 </section>
 
-                <button type="button" class="btn prize-open" id="prize-open">
+                <button
+                    type="button"
+                    class="btn prize-open"
+                    id="prize-open"
+                    data-opens="prize-modal"
+                >
                     <span class="art" data-art="gold"></span>
                     <span
                         >Шагналын сан<small
@@ -939,19 +1040,24 @@
                 bat: `<svg viewBox="0 0 120 62"><path d="M60 22C50 6 30 4 4 14c11 5 15 15 12 27 9-8 19-7 25 2 5-8 14-8 19 3 5-11 14-11 19-3 6-9 16-10 25-2-3-12 1-22 12-27C90 4 70 6 60 22Z" fill="${INK}"/><path d="M52 20l2-12 6 8 6-8 2 12Z" fill="${INK}"/><circle cx="55" cy="24" r="2.5" fill="${YELLOW}"/><circle cx="65" cy="24" r="2.5" fill="${YELLOW}"/></svg>`,
                 cat: `<svg viewBox="0 0 90 92"><path d="M64 82c20 0 22-26 8-32" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/><path d="M18 88C8 62 13 46 24 38L19 12l15 14c5-2 11-2 16 0l15-14-5 26c12 9 15 26 6 50Z" fill="${INK}"/><ellipse cx="34" cy="42" rx="5" ry="4" fill="${YELLOW}"/><ellipse cx="50" cy="42" rx="5" ry="4" fill="${YELLOW}"/><ellipse cx="34" cy="42" rx="1.5" ry="4" fill="${INK}"/><ellipse cx="50" cy="42" rx="1.5" ry="4" fill="${INK}"/></svg>`,
                 popcorn: `<svg viewBox="0 0 70 92"><g fill="${CREAM}" stroke="${INK}" stroke-width="3"><circle cx="18" cy="30" r="10"/><circle cx="35" cy="22" r="12"/><circle cx="52" cy="30" r="10"/><circle cx="27" cy="34" r="9"/><circle cx="44" cy="34" r="9"/></g><path d="M8 38h54l-7 50H15Z" fill="${CREAM}"/><path d="M17 38h9l1 50h-6ZM31 38h9l-1 50h-7ZM45 38h9l-5 50h-6Z" fill="#d4321a"/><path d="M8 38h54l-7 50H15Z" fill="none" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/></svg>`,
+                beer: `<svg viewBox="0 0 90 92"><path d="M62 42h10c13 0 13 28 0 28H62" fill="none" stroke="${INK}" stroke-width="12" stroke-linecap="round"/><path d="M62 42h10c13 0 13 28 0 28H62" fill="none" stroke="${CREAM}" stroke-width="5" stroke-linecap="round"/><path d="M14 30h50v50c0 5-3 8-8 8H22c-5 0-8-3-8-8Z" fill="${YELLOW}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M27 46v30M39 46v30M51 46v30" stroke="${INK}" stroke-width="3" stroke-linecap="round" opacity=".35"/><path d="M10 31c-7-12 5-21 14-16 4-12 22-12 26-1 11-6 23 5 16 17-3 6-10 4-12 0-4 6-12 6-16 0-4 6-12 6-16 0-3 5-9 5-12 0Z" fill="${CREAM}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/></svg>`,
             };
 
-            /* The two hosts. Swap `kind` to change who is the vampire and who is the mummy. */
+            /* The hosts. Swap `kind` to change who wears which costume. */
             const BUDDIES = [
                 { host: 1, name: "Үүрээ", kind: "vampire" },
                 { host: 2, name: "Доржоо", kind: "mummy" },
+                // no host3.jpg yet: the face shows a "?" until the photo is added to public/
+                { host: 3, name: "Нууц зочин", kind: "witch" },
             ];
             const PALE = "#e8e2d2",
                 DARK = "#2b2230",
-                RED = "#c4221a";
+                RED = "#c4221a",
+                SLIME = "#8fbf5a",
+                PURPLE = "#6b3fa0";
             // the photo in an oval; `id` keeps clip-path ids unique per copy on the page
             const faceHole = (host, id) =>
-                `<defs><clipPath id="${id}"><ellipse cx="40" cy="42" rx="24" ry="27"/></clipPath></defs><image href="host${host}.jpg" x="16" y="15" width="48" height="54" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/><ellipse cx="40" cy="42" rx="24" ry="27" fill="none" stroke="${INK}" stroke-width="2.5"/>`;
+                `<defs><clipPath id="${id}"><ellipse cx="40" cy="42" rx="24" ry="27"/></clipPath></defs><ellipse cx="40" cy="42" rx="24" ry="27" fill="#fff8e6"/><text x="40" y="56" text-anchor="middle" font-family="Rubik Mono One, Rubik, sans-serif" font-size="36" fill="${INK}">?</text><image href="host${host}.jpg" x="16" y="15" width="48" height="54" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/><ellipse cx="40" cy="42" rx="24" ry="27" fill="none" stroke="${INK}" stroke-width="2.5"/>`;
             const wrapLines = (d) =>
                 `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>`;
             const BUDDY_ART = {
@@ -976,6 +1082,17 @@
                         `<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11.5" fill="${PALE}" stroke="${INK}" stroke-width="3.5"/><path d="M4 8Q14 1 24 8L22 3Q14-2 6 3Z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></svg>`,
                     foot: () =>
                         `<svg viewBox="0 0 36 25"><path d="M4 5h12q16 2 17 15H4Z" fill="${DARK}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/></svg>`,
+                },
+                witch: {
+                    rope: SLIME,
+                    head: (host, id) =>
+                        `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="${SLIME}" stroke="${INK}" stroke-width="4"/>${faceHole(host, id)}<path d="M19 12L46-36q10 4 20-2L60 12Z" fill="${PURPLE}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="40" cy="11" rx="45" ry="9" fill="${PURPLE}" stroke="${INK}" stroke-width="3.5"/><path d="M21 4q19 7 38 0l-1-10q-17 6-33 0Z" fill="${YELLOW}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/></svg>`,
+                    torso: () =>
+                        `<svg viewBox="0 0 66 74"><ellipse cx="33" cy="38" rx="30" ry="34" fill="${PURPLE}" stroke="${INK}" stroke-width="4"/><path d="M5 38q28 9 56 0l1 9q-29 10-58 0Z" fill="${INK}"/><rect x="26" y="40" width="14" height="13" fill="${YELLOW}" stroke="${INK}" stroke-width="2.5"/><path d="M22 8l11 10 11-10" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+                    hand: () =>
+                        `<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11.5" fill="${SLIME}" stroke="${INK}" stroke-width="3.5"/><path d="M4 8Q14 1 24 8L22 3Q14-2 6 3Z" fill="${PURPLE}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></svg>`,
+                    foot: () =>
+                        `<svg viewBox="0 0 36 25"><path d="M4 5h12q7 9 18 3 0 9-8 12H4Z" fill="${DARK}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/></svg>`,
                 },
             };
 
@@ -1337,17 +1454,17 @@
                 );
             }
 
-            const prizeModal = $("#prize-modal");
-            const prizeBoard = prizeModal.querySelector(".prize-board");
-            function openPrizes() {
-                prizeModal.hidden = false;
-                $("#prize-close").focus();
+            // a modal's board falls from the ceiling and flies back up when closed
+            function dropIn(modal) {
+                const board = modal.firstElementChild;
+                modal.hidden = false;
+                board.querySelector(".prize-close").focus();
                 if (reducedMotion) return;
-                prizeModal.animate([{ opacity: 0 }, { opacity: 1 }], {
+                modal.animate([{ opacity: 0 }, { opacity: 1 }], {
                     duration: 200,
                 });
                 // falls in, then swings on its ropes until it settles
-                prizeBoard.animate(
+                board.animate(
                     [
                         {
                             transform: "translateY(-110vh) rotate(-5deg)",
@@ -1372,20 +1489,20 @@
                     ],
                     { duration: 1100 },
                 );
-                moneyRain(160);
             }
-            function closePrizes() {
-                if (prizeModal.hidden) return;
+            function flyOut(modal) {
+                if (modal.hidden) return;
+                const board = modal.firstElementChild;
                 const hide = () => {
-                    prizeModal.hidden = true;
-                    $("#prize-open").focus();
+                    modal.hidden = true;
+                    $(`[data-opens="${modal.id}"]`)?.focus();
                 };
                 if (reducedMotion) return hide();
-                prizeModal.animate([{ opacity: 1 }, { opacity: 0 }], {
+                modal.animate([{ opacity: 1 }, { opacity: 0 }], {
                     duration: 300,
                     fill: "forwards",
                 });
-                prizeBoard.animate(
+                board.animate(
                     [
                         { transform: "translateY(0)" },
                         { transform: "translateY(-110vh) rotate(4deg)" },
@@ -1393,20 +1510,26 @@
                     { duration: 300, easing: "ease-in", fill: "forwards" },
                 ).onfinish = () => {
                     for (const a of [
-                        ...prizeModal.getAnimations(),
-                        ...prizeBoard.getAnimations(),
+                        ...modal.getAnimations(),
+                        ...board.getAnimations(),
                     ])
                         a.cancel();
                     hide();
                 };
             }
-            $("#prize-open").addEventListener("click", openPrizes);
-            $("#prize-close").addEventListener("click", closePrizes);
-            prizeModal.addEventListener("click", (e) => {
-                if (e.target === prizeModal) closePrizes();
-            });
+            const MODALS = [$("#prize-modal"), $("#egg-modal")];
+            for (const box of MODALS) {
+                box.addEventListener("click", (e) => {
+                    if (e.target === box || e.target.closest(".prize-close"))
+                        flyOut(box);
+                });
+            }
             addEventListener("keydown", (e) => {
-                if (e.key === "Escape") closePrizes();
+                if (e.key === "Escape") MODALS.forEach(flyOut);
+            });
+            $("#prize-open").addEventListener("click", () => {
+                dropIn(MODALS[0]);
+                moneyRain(160);
             });
 
             async function copyText(text) {
@@ -1452,8 +1575,16 @@
             const rsvpCard = $("#rsvp");
             const kinds =
                 innerWidth < 800
-                    ? ["ghost", "pumpkin", "bat", "cat"]
-                    : ["ghost", "ghost", "pumpkin", "bat", "cat", "popcorn"];
+                    ? ["ghost", "pumpkin", "bat", "cat", "beer"]
+                    : [
+                          "ghost",
+                          "ghost",
+                          "pumpkin",
+                          "bat",
+                          "cat",
+                          "popcorn",
+                          "beer",
+                      ];
 
             const toys = kinds.map((kind) => {
                 const el = document.createElement("div");
@@ -1464,6 +1595,7 @@
                     h = el.offsetHeight;
                 const toy = {
                     el,
+                    kind,
                     w,
                     h,
                     heavy: kind === "pumpkin",
@@ -1479,6 +1611,7 @@
                     e.preventDefault();
                     el.setPointerCapture(e.pointerId);
                     toy.held = true;
+                    leaveSlot(toy);
                     toy.grabX = e.clientX - toy.x;
                     toy.grabY = e.clientY - toy.y;
                     toy.lastX = e.clientX;
@@ -1517,6 +1650,7 @@
                         toy.vx *= 3000 / speed;
                         toy.vy *= 3000 / speed;
                     }
+                    dropOnPoster(toy);
                 };
                 el.addEventListener("pointerup", release);
                 el.addEventListener("pointercancel", release);
@@ -1529,6 +1663,143 @@
                 [...toys, ...buddyParts].forEach((thing) => thing.release());
             addEventListener("pointerup", releaseAll);
             addEventListener("blur", releaseAll);
+
+            /* ---------- easter egg: put every creature back where it sits on the poster ---------- */
+
+            // each creature's spots on the poster, as fractions of the picture
+            const POSTER_SPOTS = {
+                ghost: [
+                    [0.44, 0.35],
+                    [0.83, 0.42],
+                    [0.22, 0.45],
+                ],
+                pumpkin: [[0.145, 0.7]],
+                bat: [[0.41, 0.09]],
+                cat: [[0.15, 0.29]],
+                popcorn: [[0.62, 0.5]],
+                beer: [[0.825, 0.225]],
+            };
+            const POSTER_TILT = (-2.5 * Math.PI) / 180; // matches .poster's rotate()
+            const POSTER_BORDER = 8;
+            const poster = $(".poster");
+            const slots = toys.map((toy) => {
+                const taken = toys
+                    .slice(0, toys.indexOf(toy))
+                    .filter((t) => t.kind === toy.kind).length;
+                const [fx, fy] = POSTER_SPOTS[toy.kind][taken];
+                return { kind: toy.kind, fx, fy, toy: null, x: 0, y: 0 };
+            });
+            let posterBox = poster.getBoundingClientRect();
+
+            // where each spot is on screen right now
+            function stepSlots() {
+                posterBox = poster.getBoundingClientRect();
+                const cx = posterBox.left + posterBox.width / 2,
+                    cy = posterBox.top + posterBox.height / 2;
+                const w = poster.offsetWidth - POSTER_BORDER * 2,
+                    h = poster.offsetHeight - POSTER_BORDER * 2;
+                const cos = Math.cos(POSTER_TILT),
+                    sin = Math.sin(POSTER_TILT);
+                for (const s of slots) {
+                    const dx = (s.fx - 0.5) * w,
+                        dy = (s.fy - 0.5) * h;
+                    s.x = cx + dx * cos - dy * sin;
+                    s.y = cy + dx * sin + dy * cos;
+                }
+                // the only hint: a held creature glows once it is right over its own spot
+                for (const t of toys)
+                    t.el.classList.toggle("warm", t.held && !!freeSlotFor(t));
+            }
+            function freeSlotFor(toy) {
+                const cx = toy.x + toy.w / 2,
+                    cy = toy.y + toy.h / 2;
+                const reach = Math.max(30, poster.offsetWidth * 0.09);
+                return slots.find(
+                    (s) =>
+                        s.kind === toy.kind &&
+                        !s.toy &&
+                        Math.hypot(s.x - cx, s.y - cy) < reach,
+                );
+            }
+            function leaveSlot(toy) {
+                if (!toy.slot) return;
+                toy.slot.toy = null;
+                toy.slot = null;
+                toy.el.classList.remove("placed");
+            }
+            function dropOnPoster(toy) {
+                stepSlots();
+                const cx = toy.x + toy.w / 2,
+                    cy = toy.y + toy.h / 2;
+                const slot = freeSlotFor(toy);
+                if (slot) {
+                    slot.toy = toy;
+                    toy.slot = slot;
+                    toy.vx = toy.vy = 0;
+                    toy.el.classList.add("placed");
+                    if (slots.every((s) => s.toy)) eggSolved();
+                    return;
+                }
+                const onPoster =
+                    cx > posterBox.left &&
+                    cx < posterBox.right &&
+                    cy > posterBox.top &&
+                    cy < posterBox.bottom;
+                if (!onPoster) return;
+                const yelp = toy.el.lastElementChild;
+                yelp.textContent = "Энд биш!";
+                yelp.classList.add("on");
+                setTimeout(() => yelp.classList.remove("on"), 900);
+            }
+
+            const eggModal = $("#egg-modal");
+            const eggText = $("#egg-text");
+            const eggForm = $("#egg-form");
+            function savedName() {
+                try {
+                    return JSON.parse(localStorage.getItem(STORE_KEY)).name;
+                } catch {}
+            }
+            async function claimEgg(name) {
+                eggForm.hidden = true;
+                eggText.textContent = "Шалгаж байна...";
+                try {
+                    const res = await fetch("/api/egg", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name }),
+                    });
+                    if (!res.ok) throw new Error(res.status);
+                    const { winner, place } = await res.json();
+                    if (place === 1) {
+                        eggText.textContent = `${name}, чи постерын нууцыг хамгийн түрүүнд оллоо! Тусгай шагнал чинийх 🎁`;
+                        moneyRain(120);
+                    } else if (place > 1) {
+                        eggText.textContent = `Чи нууцыг оллоо! Гэхдээ ${winner} чамаас түрүүлчихсэн, чи ${place}-т орлоо.`;
+                    } else {
+                        eggText.textContent =
+                            "Уучлаарай, чи энэ даалгавраас хасагдсан байна.";
+                    }
+                } catch {
+                    eggText.textContent = "Алдаа гарлаа, дахиад оролдоорой.";
+                    eggForm.hidden = false;
+                }
+            }
+            function eggSolved() {
+                confetti();
+                dropIn(eggModal);
+                const name = savedName();
+                if (name) return claimEgg(name);
+                eggText.textContent =
+                    "Чи постерын нууцыг оллоо! Нэрээ үлдээгээрэй.";
+                eggForm.hidden = false;
+                $("#egg-name").focus();
+            }
+            eggForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const name = $("#egg-name").value.trim();
+                if (name) claimEgg(name);
+            });
 
             /* ---------- the hosts as rag-doll buddies ---------- */
 
@@ -1790,6 +2061,78 @@
                 }
             }
 
+            // creatures bounce off each other and off the buddies; held or placed ones do not budge
+            const toyRadius = (t) => Math.min(t.w, t.h) * 0.45;
+            const toyGive = (t) => (t.held || t.slot ? 0 : t.heavy ? 0.35 : 1);
+            function collideToys() {
+                for (let i = 0; i < toys.length; i++) {
+                    const a = toys[i],
+                        ga = toyGive(a),
+                        ra = toyRadius(a);
+                    for (let j = i + 1; j < toys.length; j++) {
+                        const b = toys[j],
+                            gb = toyGive(b);
+                        if (!ga && !gb) continue;
+                        let nx = b.x + b.w / 2 - a.x - a.w / 2,
+                            ny = b.y + b.h / 2 - a.y - a.h / 2;
+                        const dist = Math.hypot(nx, ny) || 0.01;
+                        const overlap = ra + toyRadius(b) - dist;
+                        if (overlap <= 0) continue;
+                        nx /= dist;
+                        ny /= dist;
+                        a.x -= (nx * overlap * ga) / (ga + gb);
+                        a.y -= (ny * overlap * ga) / (ga + gb);
+                        b.x += (nx * overlap * gb) / (ga + gb);
+                        b.y += (ny * overlap * gb) / (ga + gb);
+                        const closing = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+                        if (closing <= 0) continue;
+                        const kick = (1.8 * closing) / (ga + gb);
+                        a.vx -= kick * ga * nx;
+                        a.vy -= kick * ga * ny;
+                        b.vx += kick * gb * nx;
+                        b.vy += kick * gb * ny;
+                    }
+                    for (const p of buddyParts) {
+                        const gp = p.held ? 0 : 1;
+                        if (!ga && !gp) continue;
+                        let nx = p.x - a.x - a.w / 2,
+                            ny = p.y - a.y - a.h / 2;
+                        const dist = Math.hypot(nx, ny) || 0.01;
+                        const overlap = ra + p.r - dist;
+                        if (overlap <= 0) continue;
+                        nx /= dist;
+                        ny /= dist;
+                        const share = ga ? 1 : 0;
+                        a.x -= (nx * overlap * share) / (share + gp);
+                        a.y -= (ny * overlap * share) / (share + gp);
+                        p.x += (nx * overlap * gp) / (share + gp);
+                        p.y += (ny * overlap * gp) / (share + gp);
+                        const closing = a.vx * nx + a.vy * ny;
+                        if (!ga || closing <= 0) continue;
+                        a.vx -= 1.5 * closing * nx;
+                        a.vy -= 1.5 * closing * ny;
+                    }
+                }
+            }
+
+            // body parts of different buddies shove each other apart
+            function collideBuddies() {
+                for (let i = 0; i < buddies.length; i++) {
+                    for (let j = i + 1; j < buddies.length; j++) {
+                        for (const a of buddies[i].parts) {
+                            for (const b of buddies[j].parts) {
+                                const overlap =
+                                    a.r +
+                                    b.r -
+                                    Math.hypot(b.x - a.x, b.y - a.y);
+                                if (overlap > 0)
+                                    pull(a, b, a.r + b.r, 0.8, true);
+                            }
+                        }
+                    }
+                }
+            }
+
             let lastFrame = performance.now();
             function frame(now) {
                 const dt = Math.min((now - lastFrame) / 1000, 0.05);
@@ -1799,7 +2142,18 @@
                 const card = rsvpCard.getBoundingClientRect();
                 const avoidCard = card.width < W * 0.7;
 
+                collideToys();
+                collideBuddies();
+                stepSlots();
                 for (const t of toys) {
+                    if (t.slot) {
+                        // sits on its spot and scrolls with the poster
+                        t.x = t.slot.x - t.w / 2;
+                        t.y = t.slot.y - t.h / 2;
+                        t.rot = 0;
+                        t.el.style.transform = `translate3d(${t.x}px, ${t.y}px, 0)`;
+                        continue;
+                    }
                     if (!t.held) {
                         if (t.heavy) {
                             t.vy += 1500 * dt;

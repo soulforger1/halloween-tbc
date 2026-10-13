@@ -42,6 +42,8 @@
   th, td { text-align: left; padding: 8px 10px; border-bottom: 2px solid rgba(26, 20, 16, .2); }
   th { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
   td.no { opacity: .6; }
+  td.out { opacity: .5; text-decoration: line-through; }
+  .badge { display: inline-block; margin-left: 8px; padding: 1px 8px; background: var(--ink); color: var(--yellow); font-weight: 800; font-size: 12px; }
   .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   select, input[type=number] {
     font: 600 16px Rubik, system-ui, sans-serif;
@@ -93,6 +95,15 @@
     </table>
   </section>
 
+  <section class="card" id="egg-card" hidden>
+    <h2>Нууц даалгавар</h2>
+    <p class="msg" id="egg-empty">Одоогоор хэн ч олоогүй байна.</p>
+    <table id="egg-table" hidden>
+      <thead><tr><th>#</th><th>Нэр</th><th>Хэзээ</th><th></th></tr></thead>
+      <tbody id="egg-rows"></tbody>
+    </table>
+  </section>
+
   <section class="card" id="teams-card" hidden>
     <h2>Баг хуваах</h2>
     <div class="controls">
@@ -113,7 +124,7 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const key = new URLSearchParams(location.search).get('key') || '';
-let db = { rsvps: [], teams: [] };
+let db = { rsvps: [], teams: [], egg: [] };
 
 async function call(method, path, body) {
   const res = await fetch(`/api/admin/${path}?key=${encodeURIComponent(key)}`, {
@@ -125,6 +136,7 @@ async function call(method, path, body) {
     $('#denied').hidden = false;
     $('#list-card').hidden = true;
     $('#teams-card').hidden = true;
+    $('#egg-card').hidden = true;
     throw new Error('unauthorized');
   }
   const data = await res.json();
@@ -142,6 +154,7 @@ function cell(text, className) {
 function render() {
   $('#list-card').hidden = false;
   $('#teams-card').hidden = false;
+  $('#egg-card').hidden = false;
   const coming = db.rsvps.filter((r) => r.coming);
   $('#yes-count').textContent = coming.length;
   $('#no-count').textContent = db.rsvps.length - coming.length;
@@ -165,6 +178,34 @@ function render() {
       cell(new Date(r.at).toLocaleString('mn-MN'), r.coming ? '' : 'no'),
       actions,
     );
+    return tr;
+  }));
+
+  const egg = db.egg || [];
+  const winner = egg.find((e) => !e.disqualified);
+  $('#egg-empty').hidden = egg.length > 0;
+  $('#egg-table').hidden = !egg.length;
+  $('#egg-rows').replaceChildren(...egg.map((e, i) => {
+    const tr = document.createElement('tr');
+    const cls = e.disqualified ? 'out' : '';
+    const name = cell(e.name, cls);
+    if (e === winner) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = 'Ялагч 🏆';
+      name.append(badge);
+    }
+    const toggle = document.createElement('button');
+    toggle.className = 'small';
+    toggle.textContent = e.disqualified ? 'Сэргээх' : 'Хасах';
+    toggle.addEventListener('click', async () => {
+      if (!e.disqualified && !confirm(`"${e.name}"-г хасах уу?`)) return;
+      db = await call('POST', 'egg', { name: e.name, disqualified: !e.disqualified });
+      render();
+    });
+    const actions = document.createElement('td');
+    actions.append(toggle);
+    tr.append(cell(i + 1, cls), name, cell(new Date(e.at).toLocaleString('mn-MN'), cls), actions);
     return tr;
   }));
 
