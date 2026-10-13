@@ -16,3 +16,16 @@ ADMIN_KEY=my-secret PORT=8080 bun start
 ```
 
 Answers are saved in `data/rsvps.json`. Submitting the same name again updates that person's answer.
+
+## Deploy
+
+Runs under pm2 on the server at `/root/projects/prod/halloween-tbc`, port 3131, behind `https://halloween.tbcap.mn`.
+
+First time:
+
+```sh
+git clone git@github.com:soulforger1/halloween-tbc.git /root/projects/prod/halloween-tbc
+/root/projects/prod/halloween-tbc/deploy.sh
+```
+
+After that, `./deploy.sh` (git pull, pm2 reload). The first run creates `.env` with `PORT` and a random `ADMIN_KEY` and prints the admin link; edit `.env` to change either. `data/rsvps.json` stays on the server and is not touched by deploys.
